@@ -37,7 +37,9 @@ pub struct Project {
 const DEFAULT_CONFIG_STR: &str = include_str!("../config/cargo-atcoder.toml");
 
 fn config_path() -> Result<PathBuf> {
-    let config_path = if let Some(path) = env::var_os("CARGO_ATCODER_TEST_CONFIG_DIR") {
+    let config_path = if let Some(path) =
+        env::var_os("CARGO_ATCODER_TEST_CONFIG_DIR")
+    {
         path.into()
     } else {
         dirs::config_dir().with_context(|| "Failed to get config directory")?
@@ -54,13 +56,11 @@ fn config_path() -> Result<PathBuf> {
 
 pub fn read_config() -> Result<Config> {
     let config_path = config_path()?;
-    let s = fs::read_to_string(&config_path)
-        .with_context(|| format!("Failed to read: `{}`", config_path.display()))?;
+    let s = fs::read_to_string(&config_path).with_context(|| {
+        format!("Failed to read: `{}`", config_path.display())
+    })?;
     toml::from_str(&s).with_context(|| {
-        format!(
-            "Failed to parse the TOML file at `{}`",
-            config_path.display(),
-        )
+        format!("Failed to parse the TOML file at `{}`", config_path.display(),)
     })
 }
 

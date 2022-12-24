@@ -52,7 +52,8 @@ pub async fn watch(opt: WatchOpt) -> Result<()> {
     // let conf = read_config()?;
 
     let cwd = env::current_dir().with_context(|| "failed to get CWD")?;
-    let metadata = metadata::cargo_metadata(opt.manifest_path.as_deref(), &cwd)?;
+    let metadata =
+        metadata::cargo_metadata(opt.manifest_path.as_deref(), &cwd)?;
     let package = metadata.query_for_member(opt.package.as_deref())?.clone();
     let atc = AtCoder::new(&session_file()?)?;
 
@@ -98,7 +99,8 @@ async fn watch_filesystem(package: &Package, atc: &AtCoder) -> Result<()> {
     let contest_info = atc.contest_info(&package.name).await?;
 
     let (tx, rx) = channel();
-    let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_millis(150))?;
+    let mut watcher: RecommendedWatcher =
+        Watcher::new(tx, Duration::from_millis(150))?;
     let rx = Arc::new(Mutex::new(rx));
 
     for Target { src_path, .. } in package.all_bins() {
@@ -110,7 +112,9 @@ async fn watch_filesystem(package: &Package, atc: &AtCoder) -> Result<()> {
     loop {
         let rx = rx.clone();
         let pb = tokio::task::spawn_blocking(move || -> Option<PathBuf> {
-            if let DebouncedEvent::Write(pb) = rx.lock().unwrap().recv().unwrap() {
+            if let DebouncedEvent::Write(pb) =
+                rx.lock().unwrap().recv().unwrap()
+            {
                 let pb = pb.canonicalize().ok()?;
                 let r = pb.strip_prefix(pb.parent()?).ok()?;
                 Some(r.to_owned())
@@ -130,11 +134,15 @@ async fn watch_filesystem(package: &Package, atc: &AtCoder) -> Result<()> {
         let problem = if let Some(problem) = contest_info.problem(&problem_id) {
             problem
         } else {
-            eprintln!("Problem `{}` is not contained in this contest", &problem_id);
+            eprintln!(
+                "Problem `{}` is not contained in this contest",
+                &problem_id
+            );
             continue;
         };
 
-        let source = fs::read(&pb).with_context(|| format!("Failed to read {}", pb.display()))?;
+        let source = fs::read(&pb)
+            .with_context(|| format!("Failed to read {}", pb.display()))?;
         let hash = sha2::Sha256::digest(&source);
 
         if file_hash.get(&problem_id) == Some(&hash) {
@@ -145,7 +153,8 @@ async fn watch_filesystem(package: &Package, atc: &AtCoder) -> Result<()> {
 
         let test_cases = atc.test_cases(&problem.url).await?;
         let test_cases = test_cases.into_iter().enumerate().collect::<Vec<_>>();
-        let test_passed = test_samples(package, &problem_id, &test_cases, false, false)?;
+        let test_passed =
+            test_samples(package, &problem_id, &test_cases, false, false)?;
 
         if !test_passed {
             continue;

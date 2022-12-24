@@ -36,9 +36,7 @@ pub struct TestCase {
 
 impl ContestInfo {
     pub fn problem(&self, id: &str) -> Option<&Problem> {
-        self.problems
-            .iter()
-            .find(|p| p.id.to_lowercase() == id.to_lowercase())
+        self.problems.iter().find(|p| p.id.to_lowercase() == id.to_lowercase())
     }
 
     pub fn problem_ids_lowercase(&self) -> Vec<String> {
@@ -231,9 +229,7 @@ impl AtCoder {
             return Ok(None);
         }
 
-        Ok(Some(
-            r.unwrap().value().attr("href").unwrap()[7..].to_owned(),
-        ))
+        Ok(Some(r.unwrap().value().attr("href").unwrap()[7..].to_owned()))
     }
 
     pub async fn login(&self, username: &str, password: &str) -> Result<()> {
@@ -251,14 +247,11 @@ impl AtCoder {
             .with_context(|| "cannot find csrf_token")?;
 
         let res = self
-            .http_post_form(
-                "/login",
-                &[
-                    ("username", username),
-                    ("password", password),
-                    ("csrf_token", csrf_token),
-                ],
-            )
+            .http_post_form("/login", &[
+                ("username", username),
+                ("password", password),
+                ("csrf_token", csrf_token),
+            ])
             .await?;
 
         let res = Html::parse_document(&res);
@@ -268,9 +261,8 @@ impl AtCoder {
         //   ...
         //   {{error message}}
         // </div>
-        if let Some(err) = res
-            .select(&Selector::parse("div.alert-danger").unwrap())
-            .next()
+        if let Some(err) =
+            res.select(&Selector::parse("div.alert-danger").unwrap()).next()
         {
             bail!(
                 "Login failed: {}",
@@ -301,7 +293,10 @@ impl AtCoder {
         let doc = self.http_get(&format!("/contests/{}", contest_id)).await?;
 
         Html::parse_document(&doc)
-            .select(&Selector::parse("#contest-statement > .lang > .lang-ja table").unwrap())
+            .select(
+                &Selector::parse("#contest-statement > .lang > .lang-ja table")
+                    .unwrap(),
+            )
             .filter(|table| {
                 let header = table
                     .select(&Selector::parse("thead > tr > th").unwrap())
@@ -438,7 +433,9 @@ impl AtCoder {
             }
         }
 
-        let (inputs, outputs) = if !inputs_ja.is_empty() && inputs_ja.len() == outputs_ja.len() {
+        let (inputs, outputs) = if !inputs_ja.is_empty()
+            && inputs_ja.len() == outputs_ja.len()
+        {
             (inputs_ja, outputs_ja)
         } else if !inputs_en.is_empty() && inputs_en.len() == outputs_en.len() {
             (inputs_en, outputs_en)
@@ -471,16 +468,18 @@ impl AtCoder {
     ) -> Result<()> {
         self.check_login().await?;
 
-        let doc = self
-            .http_get(&format!("/contests/{}/submit", contest_id))
-            .await?;
+        let doc =
+            self.http_get(&format!("/contests/{}/submit", contest_id)).await?;
 
         let (task_screen_name, language_id, language_name, csrf_token) = {
             let doc = Html::parse_document(&doc);
 
             let task_screen_name = (|| {
                 for r in doc.select(
-                    &Selector::parse("select[name=\"data.TaskScreenName\"] option").unwrap(),
+                    &Selector::parse(
+                        "select[name=\"data.TaskScreenName\"] option",
+                    )
+                    .unwrap(),
                 ) {
                     if r.inner_html()
                         .trim()
@@ -512,7 +511,10 @@ impl AtCoder {
                         .to_lowercase()
                         .starts_with("rust")
                     {
-                        return Ok((r.value().attr("value").unwrap(), r.inner_html()));
+                        return Ok((
+                            r.value().attr("value").unwrap(),
+                            r.inner_html(),
+                        ));
                     }
                 }
                 Err(anyhow!(
@@ -538,15 +540,12 @@ impl AtCoder {
         };
 
         let _ = self
-            .http_post_form(
-                &format!("/contests/{}/submit", contest_id),
-                &[
-                    ("data.TaskScreenName", &task_screen_name),
-                    ("data.LanguageId", &language_id),
-                    ("sourceCode", &source_code),
-                    ("csrf_token", &csrf_token),
-                ],
-            )
+            .http_post_form(&format!("/contests/{}/submit", contest_id), &[
+                ("data.TaskScreenName", &task_screen_name),
+                ("data.LanguageId", &language_id),
+                ("sourceCode", &source_code),
+                ("csrf_token", &csrf_token),
+            ])
             .await?;
 
         println!(
@@ -556,7 +555,10 @@ impl AtCoder {
         Ok(())
     }
 
-    pub async fn submission_status(&self, contest_id: &str) -> Result<Vec<SubmissionResult>> {
+    pub async fn submission_status(
+        &self,
+        contest_id: &str,
+    ) -> Result<Vec<SubmissionResult>> {
         self.check_login().await?;
 
         // FIXME: Currently, this returns only up to 20 submissions
@@ -584,10 +586,18 @@ impl AtCoder {
                 let sel = Selector::parse("td").unwrap();
                 let mut it = r.select(&sel);
 
-                let date = it.next()?.first_child()?.first_child()?.value().as_text()?;
-                let date = chrono::DateTime::parse_from_str(date, "%Y-%m-%d %H:%M:%S%z")
-                    .ok()?
-                    .into();
+                let date = it
+                    .next()?
+                    .first_child()?
+                    .first_child()?
+                    .value()
+                    .as_text()?;
+                let date = chrono::DateTime::parse_from_str(
+                    date,
+                    "%Y-%m-%d %H:%M:%S%z",
+                )
+                .ok()?
+                .into();
                 let problem_name = it
                     .next()?
                     .first_child()?
@@ -611,15 +621,31 @@ impl AtCoder {
                     .to_string();
                 let t = it.next()?;
                 let id: usize = t.value().attr("data-id")?.parse().ok()?;
-                let score: i64 = t.first_child()?.value().as_text()?.parse().ok()?;
-                let code_length = it.next()?.first_child()?.value().as_text()?.to_string();
+                let score: i64 =
+                    t.first_child()?.value().as_text()?.parse().ok()?;
+                let code_length =
+                    it.next()?.first_child()?.value().as_text()?.to_string();
                 let status = StatusCode::from_str(
-                    it.next()?.first_child()?.first_child()?.value().as_text()?,
+                    it.next()?
+                        .first_child()?
+                        .first_child()?
+                        .value()
+                        .as_text()?,
                 )?;
 
                 let resource = (|| {
-                    let run_time = it.next()?.first_child()?.value().as_text()?.to_string();
-                    let memory = it.next()?.first_child()?.value().as_text()?.to_string();
+                    let run_time = it
+                        .next()?
+                        .first_child()?
+                        .value()
+                        .as_text()?
+                        .to_string();
+                    let memory = it
+                        .next()?
+                        .first_child()?
+                        .value()
+                        .as_text()?
+                        .to_string();
                     Some((run_time, memory))
                 })();
 
@@ -654,7 +680,10 @@ impl AtCoder {
     ) -> Result<FullSubmissionResult> {
         let con = self
             .retrieve_text_or_error_message(
-                &format!("/contests/{}/submissions/{}", contest_id, submission_id),
+                &format!(
+                    "/contests/{}/submissions/{}",
+                    contest_id, submission_id
+                ),
                 || format!("Could not find `{}`", submission_id),
             )
             .await?;
@@ -704,10 +733,14 @@ impl AtCoder {
 
             let mut it = doc.select(&sel);
 
-            let date = it.next()?.first_child()?.first_child()?.value().as_text()?;
-            let date = chrono::DateTime::parse_from_str(date.trim(), "%Y-%m-%d %H:%M:%S%z")
-                .ok()?
-                .into();
+            let date =
+                it.next()?.first_child()?.first_child()?.value().as_text()?;
+            let date = chrono::DateTime::parse_from_str(
+                date.trim(),
+                "%Y-%m-%d %H:%M:%S%z",
+            )
+            .ok()?
+            .into();
             let problem_name = it
                 .next()?
                 .first_child()?
@@ -718,14 +751,18 @@ impl AtCoder {
                 .to_owned();
             let user = it.next()?.inner_html().trim().to_owned();
             let language = it.next()?.inner_html().trim().to_owned();
-            let score: i64 = it.next()?.inner_html().trim().to_owned().parse().ok()?;
+            let score: i64 =
+                it.next()?.inner_html().trim().to_owned().parse().ok()?;
             let code_length = it.next()?.inner_html().trim().to_owned();
-            let status =
-                StatusCode::from_str(it.next()?.first_child()?.first_child()?.value().as_text()?)?;
+            let status = StatusCode::from_str(
+                it.next()?.first_child()?.first_child()?.value().as_text()?,
+            )?;
 
             let resource = (|| {
-                let run_time = it.next()?.first_child()?.value().as_text()?.to_string();
-                let memory = it.next()?.first_child()?.value().as_text()?.to_string();
+                let run_time =
+                    it.next()?.first_child()?.value().as_text()?.to_string();
+                let memory =
+                    it.next()?.first_child()?.value().as_text()?.to_string();
                 Some((run_time, memory))
             })();
 
@@ -771,7 +808,11 @@ impl AtCoder {
                 let mut it = r.select(&sel_td);
                 let name = it.next()?.inner_html();
                 let result = StatusCode::from_str(
-                    it.next()?.first_child()?.first_child()?.value().as_text()?,
+                    it.next()?
+                        .first_child()?
+                        .first_child()?
+                        .value()
+                        .as_text()?,
                 )?;
                 let run_time = it.next()?.inner_html();
                 let memory = it.next()?.inner_html();
@@ -794,7 +835,10 @@ impl AtCoder {
         Ok(ret)
     }
 
-    async fn retrieve_text_or_error_message<T: fmt::Display, F: FnOnce() -> T>(
+    async fn retrieve_text_or_error_message<
+        T: fmt::Display,
+        F: FnOnce() -> T,
+    >(
         &self,
         path: &str,
         context_on_logged_in: F,
@@ -820,7 +864,11 @@ impl AtCoder {
             .await
     }
 
-    async fn http_post_form(&self, path: &str, form: &[(&str, &str)]) -> Result<String> {
+    async fn http_post_form(
+        &self,
+        path: &str,
+        form: &[(&str, &str)],
+    ) -> Result<String> {
         self.client
             .post_form(
                 &format!("{}{}", ATCODER_ENDPOINT, path).parse::<Url>()?,

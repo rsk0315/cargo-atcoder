@@ -22,8 +22,13 @@ pub struct Client {
 impl Drop for Client {
     fn drop(&mut self) {
         let result = (|| -> anyhow::Result<()> {
-            let mut file = File::create(&self.session_file)
-                .map_err(|e| anyhow!("failed to open `{}`: {}", self.session_file.display(), e))?;
+            let mut file = File::create(&self.session_file).map_err(|e| {
+                anyhow!(
+                    "failed to open `{}`: {}",
+                    self.session_file.display(),
+                    e
+                )
+            })?;
 
             for cookie in self
                 .cookie_store
@@ -36,7 +41,10 @@ impl Drop for Client {
         })();
 
         if let Err(err) = result {
-            let _ = eprintln!("An error occurred while saving the session: {}", err);
+            let _ = eprintln!(
+                "An error occurred while saving the session: {}",
+                err
+            );
         }
     }
 }
@@ -84,13 +92,20 @@ impl Client {
         Ok(resp.await?.error_for_status()?.text().await?)
     }
 
-    pub async fn post_form(&self, url: &Url, form: &[(&str, &str)]) -> Result<String> {
+    pub async fn post_form(
+        &self,
+        url: &Url,
+        form: &[(&str, &str)],
+    ) -> Result<String> {
         let resp = self.client.post(url.clone()).form(form).send();
         Ok(resp.await?.error_for_status()?.text().await?)
     }
 }
 
-pub fn is_http_error(err: &anyhow::Error, status_code: reqwest::StatusCode) -> bool {
+pub fn is_http_error(
+    err: &anyhow::Error,
+    status_code: reqwest::StatusCode,
+) -> bool {
     matches!(
         err.downcast_ref::<reqwest::Error>(),
         Some(err) if err.status() == Some(status_code),

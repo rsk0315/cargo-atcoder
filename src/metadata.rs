@@ -3,31 +3,44 @@ use cargo_metadata::{Metadata, MetadataCommand, Package, Resolve, Target};
 use std::{env, path::Path, process::Command, str};
 use url::Url;
 
-pub(crate) fn cargo_metadata(manifest_path: Option<&Path>, cwd: &Path) -> anyhow::Result<Metadata> {
+pub(crate) fn cargo_metadata(
+    manifest_path: Option<&Path>,
+    cwd: &Path,
+) -> anyhow::Result<Metadata> {
     // with `--no-deps`, `cargo metadata` does not update the lockfile properly.
     let mut cmd = MetadataCommand::new();
     if let Some(manifest_path) = manifest_path {
         cmd.manifest_path(manifest_path);
     }
     cmd.current_dir(cwd).exec().map_err(|err| match err {
-        cargo_metadata::Error::CargoMetadata { stderr } => anyhow!("{}", stderr.trim_end()),
+        cargo_metadata::Error::CargoMetadata { stderr } => {
+            anyhow!("{}", stderr.trim_end())
+        }
         err => err.into(),
     })
 }
 
 pub(crate) trait MetadataExt {
     fn all_members(&self) -> Vec<&Package>;
-    fn query_for_member<'a>(&'a self, spec: Option<&str>) -> anyhow::Result<&'a Package>;
-    fn find_bin<'a>(&'a self, bin_name: &str) -> anyhow::Result<(&'a Target, &'a Package)>;
+    fn query_for_member<'a>(
+        &'a self,
+        spec: Option<&str>,
+    ) -> anyhow::Result<&'a Package>;
+    fn find_bin<'a>(
+        &'a self,
+        bin_name: &str,
+    ) -> anyhow::Result<(&'a Target, &'a Package)>;
 }
 
 impl MetadataExt for Metadata {
-    fn all_members(&self) -> Vec<&Package> {
-        all_members(self).collect()
-    }
+    fn all_members(&self) -> Vec<&Package> { all_members(self).collect() }
 
-    fn query_for_member<'a>(&'a self, spec: Option<&str>) -> anyhow::Result<&'a Package> {
-        let cargo_exe = env::var_os("CARGO").with_context(|| "`$CARGO` should be present")?;
+    fn query_for_member<'a>(
+        &'a self,
+        spec: Option<&str>,
+    ) -> anyhow::Result<&'a Package> {
+        let cargo_exe = env::var_os("CARGO")
+            .with_context(|| "`$CARGO` should be present")?;
         let manifest_path = self
             .resolve
             .as_ref()
@@ -63,7 +76,10 @@ impl MetadataExt for Metadata {
         })
     }
 
-    fn find_bin<'a>(&'a self, bin_name: &str) -> anyhow::Result<(&'a Target, &'a Package)> {
+    fn find_bin<'a>(
+        &'a self,
+        bin_name: &str,
+    ) -> anyhow::Result<(&'a Target, &'a Package)> {
         all_members(self)
             .flat_map(|p| all_bins(p).map(move |t| (t, p)))
             .find(|(Target { name, .. }, _)| name == bin_name)
@@ -77,9 +93,7 @@ pub(crate) trait PackageExt {
 }
 
 impl PackageExt for Package {
-    fn all_bins(&self) -> Vec<&Target> {
-        all_bins(self).collect()
-    }
+    fn all_bins(&self) -> Vec<&Target> { all_bins(self).collect() }
 
     fn find_bin<'a>(&'a self, name: &str) -> anyhow::Result<&'a Target> {
         all_bins(self)
@@ -89,10 +103,9 @@ impl PackageExt for Package {
 }
 
 fn all_members(metadata: &Metadata) -> impl Iterator<Item = &Package> {
-    metadata
-        .packages
-        .iter()
-        .filter(move |Package { id, .. }| metadata.workspace_members.contains(id))
+    metadata.packages.iter().filter(move |Package { id, .. }| {
+        metadata.workspace_members.contains(id)
+    })
 }
 
 fn all_bins(package: &Package) -> impl Iterator<Item = &Target> {
