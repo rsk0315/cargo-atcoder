@@ -5,10 +5,14 @@ const _: &str = r{{HASH_SIGNS}}"
 "{{HASH_SIGNS}};
 
 fn main() {
-    let exe = "/tmp/bin{{HASH}}";
-    std::io::Write::write_all(&mut std::fs::File::create(exe).unwrap(), &decode(BIN)).unwrap();
-    std::fs::set_permissions(exe, std::os::unix::fs::PermissionsExt::from_mode(0o755)).unwrap();
-    std::process::exit(std::process::Command::new(exe).status().unwrap().code().unwrap())
+    let exe = {
+        let mut path = std::path::PathBuf::from(std::env::temp_dir());
+        path.push("bin{{HASH}}");
+        path
+    };
+    std::io::Write::write_all(&mut std::fs::File::create(&exe).unwrap(), &decode(BIN)).unwrap();
+    std::fs::set_permissions(&exe, std::os::unix::fs::PermissionsExt::from_mode(0o755)).unwrap();
+    std::process::exit(std::process::Command::new(&exe).status().unwrap().code().unwrap())
 }
 
 fn decode(v: &str) -> Vec<u8> {
