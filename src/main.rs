@@ -639,6 +639,9 @@ async fn submit(opt: SubmitOpt) -> Result<()> {
     Ok(())
 }
 
+static HASH_SIGNS_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r##""#*"##).unwrap());
+
 fn gen_binary_source(
     metadata: &Metadata,
     package: &Package,
@@ -724,9 +727,18 @@ fn gen_binary_source(
         let hash =
             &data_encoding::HEXUPPER.encode(&sha2::Sha256::digest(&bin))[0..8];
 
+        let hash_signs = "#".repeat(
+            HASH_SIGNS_RE
+                .find_iter(&source_code)
+                .map(|m| m.end() - m.start())
+                .max()
+                .unwrap_or(0),
+        );
+
         templ
             .replacen("{{BINARY}}", &bin_base64, 1)
             .replacen("{{HASH}}", hash, 1)
+            .replacen("{{HASH_SIGNS}}", &hash_signs, 2)
             .replacen("{{SOURCE_CODE}}", source_code.trim_end(), 1)
     };
 
