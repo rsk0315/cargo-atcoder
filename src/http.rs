@@ -30,7 +30,7 @@ impl Drop for Client {
                 )
             })?;
 
-            for cookie in self
+            if let Some(cookie) = self
                 .cookie_store
                 .cookies(&self.endpoint.parse::<Url>().unwrap())
             {
