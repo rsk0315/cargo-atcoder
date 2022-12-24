@@ -663,6 +663,10 @@ fn gen_binary_source(
     let status = Command::new(program)
         .arg("build")
         .arg(format!("--target={}", target))
+        .arg("-Z")
+        .arg("build-std=std,panic_abort")
+        .arg("-Z")
+        .arg("build-std-features=panic_immediate_abort")
         .arg("--release")
         .arg("--bin")
         .arg(&bin.name)
@@ -697,6 +701,7 @@ fn gen_binary_source(
             println!("upx found. Use upx to compress binary.");
             let status = Command::new(upx_path)
                 .arg("--best")
+                .arg("--lzma")
                 .arg("-qq")
                 .arg(&binary_file)
                 .status()?;
