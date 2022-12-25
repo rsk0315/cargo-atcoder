@@ -98,8 +98,10 @@ async fn new_project(opt: NewOpt) -> Result<()> {
         bail!("Directory {} already exists", dir.display());
     }
 
-    let stat =
-        Command::new("cargo").arg("new").arg(&opt.contest_id).status()?;
+    let stat = Command::new("cargo")
+        .arg("new")
+        .arg(&opt.contest_id)
+        .status()?;
     if !stat.success() {
         bail!("Failed to create project: {}", &opt.contest_id);
     }
@@ -119,8 +121,7 @@ async fn new_project(opt: NewOpt) -> Result<()> {
     }
 
     let toml_file = dir.join("Cargo.toml");
-    let mut manifest =
-        fs::read_to_string(&toml_file)?.parse::<toml_edit::Document>()?;
+    let mut manifest = fs::read_to_string(&toml_file)?.parse::<toml_edit::Document>()?;
     let conf_preserved = read_config_preserving()?;
     manifest["dependencies"] = conf_preserved["dependencies"].clone();
     manifest["dev-dependencies"] = conf_preserved["dev-dependencies"].clone();
@@ -129,18 +130,14 @@ async fn new_project(opt: NewOpt) -> Result<()> {
         tbl.set_implicit(true);
         tbl
     });
-    manifest["profile"]["release"] =
-        conf_preserved["profile"]["release"].clone();
+    manifest["profile"]["release"] = conf_preserved["profile"]["release"].clone();
 
     fs::write(toml_file, manifest.to_string())?;
 
     println!("Creating project done.");
 
     if !opt.skip_warmup {
-        let metadata = metadata::cargo_metadata(
-            None,
-            format!("./{}", opt.contest_id).as_ref(),
-        )?;
+        let metadata = metadata::cargo_metadata(None, format!("./{}", opt.contest_id).as_ref())?;
         warmup_for(&metadata, Some(&[&opt.contest_id]))?;
         println!("Warming up done.");
     }
@@ -149,11 +146,13 @@ async fn new_project(opt: NewOpt) -> Result<()> {
 }
 
 async fn login() -> Result<()> {
-    let username =
-        dialoguer::Input::<String>::new().with_prompt("Username").interact()?;
+    let username = dialoguer::Input::<String>::new()
+        .with_prompt("Username")
+        .interact()?;
 
-    let password =
-        dialoguer::Password::new().with_prompt("Password").interact()?;
+    let password = dialoguer::Password::new()
+        .with_prompt("Password")
+        .interact()?;
 
     let atc = AtCoder::new(&session_file()?)?;
     atc.login(&username, &password).await?;
@@ -200,17 +199,16 @@ struct TestOpt {
 
 async fn test(opt: TestOpt) -> Result<()> {
     let cwd = env::current_dir().with_context(|| "failed to get CWD")?;
-    let metadata =
-        metadata::cargo_metadata(opt.manifest_path.as_deref(), &cwd)?;
+    let metadata = metadata::cargo_metadata(opt.manifest_path.as_deref(), &cwd)?;
     let package = metadata.query_for_member(opt.package.as_deref())?;
     let atc = AtCoder::new(&session_file()?)?;
     let problem_id = opt.problem_id;
     let contest_id = &package.name;
     let contest_info = atc.contest_info(contest_id).await?;
 
-    let problem = contest_info.problem(&problem_id).with_context(|| {
-        format!("Problem `{}` is not contained in this contest", &problem_id)
-    })?;
+    let problem = contest_info
+        .problem(&problem_id)
+        .with_context(|| format!("Problem `{}` is not contained in this contest", &problem_id))?;
 
     if opt.custom {
         return test_custom(package, &problem_id, opt.release);
@@ -235,12 +233,10 @@ async fn test(opt: TestOpt) -> Result<()> {
         }
     }
 
-    let passed =
-        test_samples(package, &problem_id, &tcs, opt.release, opt.verbose)?;
+    let passed = test_samples(package, &problem_id, &tcs, opt.release, opt.verbose)?;
     if passed && opt.submit {
         let Target { src_path, .. } = package.find_bin(&problem_id)?;
-        let source = fs::read(src_path)
-            .with_context(|| format!("Failed to read {}", src_path))?;
+        let source = fs::read(src_path).with_context(|| format!("Failed to read {}", src_path))?;
         atc.submit(contest_id, &problem_id, &String::from_utf8_lossy(&source))
             .await?;
     }
@@ -291,7 +287,11 @@ fn test_samples(
             .stderr(Stdio::piped())
             .spawn()?;
 
-        child.stdin.as_mut().unwrap().write_all(test_case.input.as_bytes())?;
+        child
+            .stdin
+            .as_mut()
+            .unwrap()
+            .write_all(test_case.input.as_bytes())?;
 
         let output = child.wait_with_output()?;
         if !output.status.success() {
@@ -321,12 +321,7 @@ fn test_samples(
             );
             fails.push((i, true, output));
         } else {
-            println!(
-                "test sample {} ... {}{}",
-                i + 1,
-                green.apply_to("ok"),
-                ferr
-            );
+            println!("test sample {} ... {}{}", i + 1, green.apply_to("ok"), ferr);
             if verbose && !output.stderr.is_empty() {
                 println!("stderr:");
                 print_lines(&String::from_utf8_lossy(&output.stderr));
@@ -433,15 +428,16 @@ fn cmp_output(reference: &str, out: &str) -> (bool, Option<FloatError>) {
             let rel_error = abs_error / f1.abs();
 
             if max_error.is_none() {
-                max_error = Some(FloatError { abs_error: 0., rel_error: 0. });
+                max_error = Some(FloatError {
+                    abs_error: 0.,
+                    rel_error: 0.,
+                });
             }
 
             max_error = Some({
                 FloatError {
-                    abs_error: abs_error
-                        .max(max_error.as_ref().unwrap().abs_error),
-                    rel_error: rel_error
-                        .max(max_error.as_ref().unwrap().rel_error),
+                    abs_error: abs_error.max(max_error.as_ref().unwrap().abs_error),
+                    rel_error: rel_error.max(max_error.as_ref().unwrap().rel_error),
                 }
             });
         } else if w1 != w2 {
@@ -460,15 +456,15 @@ fn cmp_output(reference: &str, out: &str) -> (bool, Option<FloatError>) {
 static FLOAT_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"^\d+\.\d+$").unwrap());
 static INTEGER_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"^\d+$").unwrap());
 
-fn is_float(w: &str) -> bool { FLOAT_RE.is_match(w) }
+fn is_float(w: &str) -> bool {
+    FLOAT_RE.is_match(w)
+}
 
-fn is_integer(w: &str) -> bool { INTEGER_RE.is_match(w) }
+fn is_integer(w: &str) -> bool {
+    INTEGER_RE.is_match(w)
+}
 
-fn test_custom(
-    package: &Package,
-    problem_id: &str,
-    release: bool,
-) -> Result<()> {
+fn test_custom(package: &Package, problem_id: &str, release: bool) -> Result<()> {
     let build_status = Command::new("cargo")
         .arg("build")
         .args(if release { vec!["--release"] } else { vec![] })
@@ -572,8 +568,7 @@ struct SubmitOpt {
 
 async fn submit(opt: SubmitOpt) -> Result<()> {
     let cwd = env::current_dir().with_context(|| "failed to get CWD")?;
-    let metadata =
-        metadata::cargo_metadata(opt.manifest_path.as_deref(), &cwd)?;
+    let metadata = metadata::cargo_metadata(opt.manifest_path.as_deref(), &cwd)?;
     let package = metadata.query_for_member(opt.package.as_deref())?;
     let atc = AtCoder::new(&session_file()?)?;
     let config = read_config()?;
@@ -581,9 +576,9 @@ async fn submit(opt: SubmitOpt) -> Result<()> {
     let contest_id = &package.name;
     let problem_id = opt.problem_id;
     let contest_info = atc.contest_info(contest_id).await?;
-    let problem = contest_info.problem(&problem_id).with_context(|| {
-        format!("Problem `{}` is not contained in this contest", &problem_id)
-    })?;
+    let problem = contest_info
+        .problem(&problem_id)
+        .with_context(|| format!("Problem `{}` is not contained in this contest", &problem_id))?;
 
     let test_passed = if opt.skip_test {
         true
@@ -606,13 +601,10 @@ async fn submit(opt: SubmitOpt) -> Result<()> {
     let target = package.find_bin(&problem_id)?;
     let source = if !via_bin {
         let Target { src_path, .. } = target;
-        fs::read(src_path)
-            .with_context(|| format!("Failed to read {}", src_path))?
+        fs::read(src_path).with_context(|| format!("Failed to read {}", src_path))?
     } else {
         println!("Submitting via binary...");
-        gen_binary_source(
-            &metadata, package, &target, &config, opt.column, opt.no_upx,
-        )?
+        gen_binary_source(&metadata, package, &target, &config, opt.column, opt.no_upx)?
     };
 
     atc.submit(contest_id, &problem_id, &String::from_utf8_lossy(&source))
@@ -621,8 +613,7 @@ async fn submit(opt: SubmitOpt) -> Result<()> {
 
     println!("Fetching submission result...");
     let atc = Arc::new(atc);
-    let last_id =
-        watch_submission_status(Arc::clone(&atc), contest_id, true).await?;
+    let last_id = watch_submission_status(Arc::clone(&atc), contest_id, true).await?;
     println!();
 
     if let Some(last_id) = last_id {
@@ -639,8 +630,7 @@ async fn submit(opt: SubmitOpt) -> Result<()> {
     Ok(())
 }
 
-static HASH_SIGNS_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r##""#*"##).unwrap());
+static HASH_SIGNS_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r##""#*"##).unwrap());
 
 fn gen_binary_source(
     metadata: &Metadata,
@@ -654,10 +644,17 @@ fn gen_binary_source(
         .with_context(|| format!("Failed to read {}", bin.src_path))?;
 
     let target = &config.profile.target;
-    let binary_file =
-        metadata.target_directory.join(target).join("release").join(&bin.name);
+    let binary_file = metadata
+        .target_directory
+        .join(target)
+        .join("release")
+        .join(&bin.name);
 
-    let program = if config.atcoder.use_cross { "cross" } else { "cargo" };
+    let program = if config.atcoder.use_cross {
+        "cross"
+    } else {
+        "cargo"
+    };
 
     if which::which(program).is_err() {
         bail!("Build failed. {} not found.", program);
@@ -729,8 +726,7 @@ fn gen_binary_source(
             bin_base64
         };
 
-        let hash =
-            &data_encoding::HEXUPPER.encode(&sha2::Sha256::digest(&bin))[0..8];
+        let hash = &data_encoding::HEXUPPER.encode(&sha2::Sha256::digest(&bin))[0..8];
 
         let hash_signs = "#".repeat(
             HASH_SIGNS_RE
@@ -798,13 +794,7 @@ async fn info() -> Result<()> {
 #[derive(StructOpt, Debug)]
 struct WarmupOpt {
     /// [cargo] Package(s) to warm up
-    #[structopt(
-        short,
-        long,
-        value_name("SPEC"),
-        min_values(1),
-        number_of_values(1)
-    )]
+    #[structopt(short, long, value_name("SPEC"), min_values(1), number_of_values(1))]
     package: Vec<String>,
 
     /// [cargo] Path to Cargo.toml
@@ -814,15 +804,11 @@ struct WarmupOpt {
 
 fn warmup(opt: WarmupOpt) -> Result<()> {
     let cwd = env::current_dir().with_context(|| "failed to get CWD")?;
-    let metadata =
-        metadata::cargo_metadata(opt.manifest_path.as_deref(), &cwd)?;
+    let metadata = metadata::cargo_metadata(opt.manifest_path.as_deref(), &cwd)?;
     warmup_for(&metadata, Some(&*opt.package).filter(|ss| !ss.is_empty()))
 }
 
-fn warmup_for(
-    metadata: &Metadata,
-    specs: Option<&[impl AsRef<str>]>,
-) -> Result<()> {
+fn warmup_for(metadata: &Metadata, specs: Option<&[impl AsRef<str>]>) -> Result<()> {
     let members = specs
         .map(|specs| {
             specs
@@ -894,15 +880,14 @@ async fn watch_submission_status(
     let update_fut = tokio::task::spawn(async move {
         let mut dat = BTreeMap::new();
 
-        let spinner_style = ProgressStyle::default_spinner()
-            .template("{prefix} {spinner:.cyan} {msg}");
+        let spinner_style =
+            ProgressStyle::default_spinner().template("{prefix} {spinner:.cyan} {msg}");
 
         let bar_style = ProgressStyle::default_bar()
             .template("{prefix} [{bar:30.cyan/blue}] {pos:>2}/{len:2} {msg}")
             .progress_chars("=>.");
 
-        let finish_style =
-            ProgressStyle::default_spinner().template("{prefix} {msg}");
+        let finish_style = ProgressStyle::default_spinner().template("{prefix} {msg}");
 
         let green = Style::new().green();
         let red = Style::new().red();
@@ -916,10 +901,7 @@ async fn watch_submission_status(
             } else {
                 results
                     .into_iter()
-                    .filter(|r| {
-                        (cur_time - r.date).num_seconds() <= 10
-                            || !r.status.done()
-                    })
+                    .filter(|r| (cur_time - r.date).num_seconds() <= 10 || !r.status.done())
                     .collect::<Vec<_>>()
             };
             results.sort_by_key(|r| r.date);
@@ -930,8 +912,7 @@ async fn watch_submission_status(
 
             for result in results {
                 let pb = dat.entry(result.id).or_insert_with(|| {
-                    let pb = ProgressBar::new_spinner()
-                        .with_style(spinner_style.clone());
+                    let pb = ProgressBar::new_spinner().with_style(spinner_style.clone());
 
                     let problem_name_head = {
                         let mut problem_name_head = result.problem_name.clone();
@@ -939,9 +920,7 @@ async fn watch_submission_status(
                         while problem_name_head.width() > 20 {
                             problem_name_head.pop();
                         }
-                        for _ in
-                            0..20usize.saturating_sub(problem_name_head.width())
-                        {
+                        for _ in 0..20usize.saturating_sub(problem_name_head.width()) {
                             problem_name_head.push(' ');
                         }
                         problem_name_head
@@ -949,8 +928,7 @@ async fn watch_submission_status(
 
                     pb.set_prefix(format!(
                         "{} | {} |",
-                        DateTime::<Local>::from(result.date)
-                            .format("%Y-%m-%d %H:%M:%S"),
+                        DateTime::<Local>::from(result.date).format("%Y-%m-%d %H:%M:%S"),
                         problem_name_head,
                     ));
 
@@ -1012,9 +990,7 @@ async fn watch_submission_status(
                             pb.0.finish_with_message(format!(
                                 "{}{}",
                                 stat,
-                                if let (Some(rt), Some(mm)) =
-                                    (result.run_time, result.memory)
-                                {
+                                if let (Some(rt), Some(mm)) = (result.run_time, result.memory) {
                                     format!(" | {:>7} | {}", rt, mm)
                                 } else {
                                     "".to_owned()
@@ -1073,13 +1049,10 @@ struct GenBinaryOpt {
 
 fn gen_binary(opt: GenBinaryOpt) -> Result<()> {
     let cwd = env::current_dir().with_context(|| "failed to get CWD")?;
-    let metadata =
-        metadata::cargo_metadata(opt.manifest_path.as_deref(), &cwd)?;
+    let metadata = metadata::cargo_metadata(opt.manifest_path.as_deref(), &cwd)?;
     let (target, package) = metadata.find_bin(&opt.problem_id)?;
     let config = read_config()?;
-    let src = gen_binary_source(
-        &metadata, package, target, &config, opt.column, opt.no_upx,
-    )?;
+    let src = gen_binary_source(&metadata, package, target, &config, opt.column, opt.no_upx)?;
     let filename = opt
         .output
         .clone()
@@ -1106,11 +1079,12 @@ struct ResultOpt {
 
 async fn result(opt: ResultOpt) -> Result<()> {
     let cwd = env::current_dir().with_context(|| "failed to get CWD")?;
-    let metadata =
-        metadata::cargo_metadata(opt.manifest_path.as_deref(), &cwd)?;
+    let metadata = metadata::cargo_metadata(opt.manifest_path.as_deref(), &cwd)?;
     let atc = AtCoder::new(&session_file()?)?;
     let contest_id = &metadata.query_for_member(opt.package.as_deref())?.name;
-    let res = atc.submission_status_full(contest_id, opt.submission_id).await?;
+    let res = atc
+        .submission_status_full(contest_id, opt.submission_id)
+        .await?;
 
     print_full_result(&res, opt.verbose)
 }
@@ -1154,7 +1128,12 @@ fn print_full_result(res: &FullSubmissionResult, verbose: bool) -> Result<()> {
         res.result.memory.as_deref().unwrap_or("N/A")
     );
 
-    if res.result.status.result_code().map(|c| !c.accepted()).unwrap_or(false)
+    if res
+        .result
+        .status
+        .result_code()
+        .map(|c| !c.accepted())
+        .unwrap_or(false)
         && !res.cases.is_empty()
     {
         let mut mm = BTreeMap::<&ResultCode, usize>::new();
@@ -1224,8 +1203,7 @@ struct StatusOpt {
 
 async fn status(opt: StatusOpt) -> Result<()> {
     let cwd = env::current_dir().with_context(|| "failed to get CWD")?;
-    let metadata =
-        metadata::cargo_metadata(opt.manifest_path.as_deref(), &cwd)?;
+    let metadata = metadata::cargo_metadata(opt.manifest_path.as_deref(), &cwd)?;
     let atc = AtCoder::new(&session_file()?)?;
     let contest_id = &metadata.query_for_member(opt.package.as_deref())?.name;
     let atc = Arc::new(atc);
