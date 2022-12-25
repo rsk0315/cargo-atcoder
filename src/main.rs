@@ -645,7 +645,8 @@ fn gen_binary_source(
 
     let target = &config.profile.target;
     let is_windows = target.split('-').nth(2) == Some("windows");
-    let bin_name = format!("{}{}", bin.name, if is_windows { ".exe" } else { "" });
+    let exe_extension = if is_windows { ".exe" } else { "" };
+    let bin_name = format!("{}{}", bin.name, exe_extension);
     let binary_file = metadata
         .target_directory
         .join(target)
@@ -729,6 +730,7 @@ fn gen_binary_source(
         };
 
         let hash = &data_encoding::HEXUPPER.encode(&sha2::Sha256::digest(&bin))[0..8];
+        let tmp_bin_name = format!("bin{}{}", hash, exe_extension);
 
         let hash_signs = "#".repeat(
             HASH_SIGNS_RE
@@ -740,7 +742,7 @@ fn gen_binary_source(
 
         templ
             .replacen("{{BINARY}}", &bin_base64, 1)
-            .replacen("{{HASH}}", hash, 1)
+            .replacen("{{BIN_NAME}}", &tmp_bin_name, 1)
             .replacen("{{HASH_SIGNS}}", &hash_signs, 2)
             .replacen("{{SOURCE_CODE}}", source_code.trim_end(), 1)
     };
