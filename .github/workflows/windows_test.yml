@@ -17,6 +17,4 @@ jobs:
           override: true
       - name: Test
         run: |
-          dir
-          ls
-          echo hello
+          echo "1 2 3 hello" | cargo run --bin a-bin
