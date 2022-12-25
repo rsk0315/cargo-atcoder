@@ -654,8 +654,11 @@ fn gen_binary_source(
         .with_context(|| format!("Failed to read {}", bin.src_path))?;
 
     let target = &config.profile.target;
+    let is_windows = target.split("-").nth(2) == Some("windows");
+    let bin_name =
+        format!("{}{}", bin.name, if is_windows { ".exe" } else { "" });
     let binary_file =
-        metadata.target_directory.join(target).join("release").join(&bin.name);
+        metadata.target_directory.join(target).join("release").join(bin_name);
 
     let program = if config.atcoder.use_cross { "cross" } else { "cargo" };
 
