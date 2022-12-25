@@ -83,10 +83,7 @@ pub enum StatusCode {
 
 impl StatusCode {
     pub fn done(&self) -> bool {
-        match self {
-            StatusCode::Done(_) => true,
-            _ => false,
-        }
+        matches!(self, StatusCode::Done(_))
     }
 
     pub fn result_code(&self) -> Option<&ResultCode> {
@@ -149,10 +146,7 @@ impl ResultCode {
 
     pub fn accepted(&self) -> bool {
         use ResultCode::*;
-        match self {
-            Accepted => true,
-            _ => false,
-        }
+        matches!(self, Accepted)
     }
 }
 
@@ -178,7 +172,7 @@ impl StatusCode {
             let total = caps[2].parse().unwrap();
 
             let rest = caps[3].trim();
-            if rest == "" {
+            if rest.is_empty() {
                 return Some(Progress(cur, total, None));
             }
 
@@ -483,7 +477,6 @@ impl AtCoder {
                     &Selector::parse("select[name=\"data.TaskScreenName\"] option").unwrap(),
                 ) {
                     if r.inner_html()
-                        .trim()
                         .split_whitespace()
                         .next()
                         .unwrap()
@@ -505,7 +498,6 @@ impl AtCoder {
                     .unwrap(),
                 ) {
                     if r.inner_html()
-                        .trim()
                         .split_whitespace()
                         .next()
                         .unwrap_or("")
@@ -543,7 +535,7 @@ impl AtCoder {
                 &[
                     ("data.TaskScreenName", &task_screen_name),
                     ("data.LanguageId", &language_id),
-                    ("sourceCode", &source_code),
+                    ("sourceCode", source_code),
                     ("csrf_token", &csrf_token),
                 ],
             )
