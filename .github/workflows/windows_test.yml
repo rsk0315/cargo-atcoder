@@ -17,4 +17,5 @@ jobs:
           override: true
       - name: Test
         run: |
-          echo "1 2 3 hello" | cargo run --bin a-bin
+          rustc src/bin/a-bin.rs
+          echo "1 2 3 hello" | a-bin.exe
