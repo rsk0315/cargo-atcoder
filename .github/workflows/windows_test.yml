@@ -1,0 +1,22 @@
+name: Windows test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+jobs:
+  windows_test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install latest Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Test
+        run: |
+          dir
+          ls
+          echo hello
