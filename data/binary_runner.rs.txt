@@ -5,7 +5,7 @@ const _: &str = r{{HASH_SIGNS}}"
 "{{HASH_SIGNS}};
 
 fn main() {
-    let exe = std::path::PathBuf::from(std::env::temp_dir()).join("bin{{HASH}}");
+    let exe = std::env::temp_dir().join("bin{{HASH}}");
     std::io::Write::write_all(&mut std::fs::File::create(&exe).unwrap(), &decode(BIN)).unwrap();
     std::fs::set_permissions(&exe, std::os::unix::fs::PermissionsExt::from_mode(0o755)).unwrap();
     std::process::exit(std::process::Command::new(&exe).status().unwrap().code().unwrap())
@@ -28,6 +28,6 @@ fn decode(v: &str) -> Vec<u8> {
     ret
 }
 
-const TBL: &'static [u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-const BIN: &'static str = "
+const TBL: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+const BIN: &str = "
 {{BINARY}}";
